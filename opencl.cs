@@ -248,6 +248,9 @@ namespace Template
 		public void SetArgument( int i, ComputeImage2D v ) { kernel.SetMemoryArgument( i, v ); }
 		public void SetArgument( int i, OpenCLImage<int> v ) { kernel.SetMemoryArgument( i, v.texBuffer ); }
 		public void SetArgument( int i, OpenCLImage<float> v ) { kernel.SetMemoryArgument( i, v.texBuffer ); }
+
+        public void SetArgument( int i, OpenCLBuffer<float3> v) { kernel.SetMemoryArgument(i, v._gpubuffer); }
+
 		public void LockOpenGLObject( ComputeImage2D image )
 		{
 			List<ComputeMemory> c = new List<ComputeMemory>() { image };

@@ -32,7 +32,7 @@ namespace Template
 			game.screen = new Surface( Width, Height );
 			Sprite.target = game.screen;
 			screenID = game.screen.GenTexture();
-			game.Init();
+			game.Init(new SimData { seed=0, coneAngle = 45f, particleCount= 10000, particleSpeed = 1f, sprayTicks = 10});
 		}
 		protected override void OnUnload( EventArgs e )
 		{
