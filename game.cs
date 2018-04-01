@@ -9,6 +9,7 @@ using OpenTK;
 using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
 using System.Windows;
+using System.Windows.Forms;
 
 namespace Template {
 
@@ -26,6 +27,7 @@ namespace Template {
         OpenCLBuffer<float3> oldPosBuffer;
         OpenCLBuffer<float3> newDirBuffer;
         OpenCLBuffer<float3> oldDirBuffer;
+        OpenCLBuffer<float> velBuffer;
         Random rng;
 	    // create an OpenGL texture to which OpenCL can send data
 	    OpenCLImage<int> image = new OpenCLImage<int>( ocl, 512, 512 );
@@ -37,6 +39,7 @@ namespace Template {
         int sprayTicks = 0;
         float particleSpeed = 0;
         float coneAngle = 0;
+        float deltaTime = 0;
         Random random;
 
 	    public void Init(SimData simData)
@@ -48,25 +51,32 @@ namespace Template {
             particleSpeed = simData.particleSpeed;
             coneAngle = simData.coneAngle;
             sprayTicks = simData.sprayTicks;
+            deltaTime = simData.deltaTime;
             random = new Random(seed);
             oldPosBuffer = new OpenCLBuffer<float3>(ocl, particleCount * particleCount);
             newPosBuffer = new OpenCLBuffer<float3>(ocl, particleCount * particleCount);
             oldDirBuffer = new OpenCLBuffer<float3>(ocl, particleCount * particleCount);
             newDirBuffer = new OpenCLBuffer<float3>(ocl, particleCount * particleCount);
-            for(int i = 0; i < particleCount * particleCount; i++)
+            velBuffer = new OpenCLBuffer<float>(ocl, particleCount * particleCount);
+            
+            for (int i = 0; i < particleCount * particleCount; i++)
             {
                 oldPosBuffer[i] = new float3();
                 oldDirBuffer[i] = new float3();
                 newPosBuffer[i] = new float3();
                 newDirBuffer[i] = new float3();
+                velBuffer[i] = particleSpeed;
             }
+            velBuffer.CopyToDevice();
         }
 
 	    public void Tick()
 	    {
+            if (tickCount > 100)
+                MessageBox.Show("OK");
             if(tickCount < sprayTicks)
             {
-                int particlePerTick = particleCount / tickCount;
+                int particlePerTick = particleCount / sprayTicks;
                 for(int i = 0; i < particlePerTick; i++)
                 {
                     oldDirBuffer[particlePerTick * tickCount + i] = createRandomVector();
@@ -81,22 +91,28 @@ namespace Template {
             kernel.SetArgument(0, oldPosBuffer);
             kernel.SetArgument(1, newPosBuffer);
             kernel.SetArgument(2, oldDirBuffer);
-            kernel.SetArgument(3, newDirBuffer);;
-            kernel.SetArgument(4, particleCount);
+            kernel.SetArgument(3, newDirBuffer);
+            kernel.SetArgument(4, velBuffer);
+            kernel.SetArgument(5, particleCount);
+            kernel.SetArgument(6, tickCount * deltaTime);
             // execute kernel
             int worksize = (int)Math.Sqrt(particleCount);
             long [] workSize = { worksize + 32 - (worksize % 32), worksize + 32 - (worksize % 32) };
 		    long [] localSize = { 32, 4 };
 
-			// NO INTEROP PATH:
-			// Use OpenCL to fill a C# pixel array, encapsulated in an
-			// OpenCLBuffer<int> object (buffer). After filling the buffer, it
-			// is copied to the screen surface, so the template code can show
-			// it in the window.
-			// execute the kernel
+            // NO INTEROP PATH:
+            // Use OpenCL to fill a C# pixel array, encapsulated in an
+            // OpenCLBuffer<int> object (buffer). After filling the buffer, it
+            // is copied to the screen surface, so the template code can show
+            // it in the window.
+            // execute the kernel
+            oldDirBuffer.CopyToDevice();
+            oldPosBuffer.CopyToDevice();
+
 			kernel.Execute( workSize, localSize );
 			// get the data from the device to the host
 			newPosBuffer.CopyFromDevice();
+            newDirBuffer.CopyFromDevice();
 			// plot pixels using the data on the host
 			/*for( int y = 0; y < 512; y++ ) for( int x = 0; x < 512; x++ )
 			{
@@ -107,8 +123,13 @@ namespace Template {
 
         private float3 createRandomVector()
         {
-            
-            return new float3((float)random.NextDouble(), (float)random.NextDouble(), (float)random.NextDouble());
+            Vector2 point = new Vector2((float)random.NextDouble(), (float)(random.NextDouble()));
+            point.Normalize();
+            float adjacent = 1f/(float)Math.Tan(coneAngle);
+            Vector3 final = new Vector3(point.X, point.Y, adjacent);
+            final.Normalize();
+
+            return new float3(final.X, final.Y, final.Z);
         }
 
         public void Render()
@@ -126,6 +147,7 @@ namespace Template {
         public float particleSpeed;
         public float coneAngle;
         public int sprayTicks;
+        public float deltaTime;
     }
 
 } // namespace Template
