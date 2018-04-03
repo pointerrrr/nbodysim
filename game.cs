@@ -39,10 +39,12 @@ namespace Template {
         int tickCount = 0;
         int particleCount = 0;
         int sprayTicks = 0;
+        int boxes = 0;
         float particleSpeed = 0;
         float coneAngle = 0;
         float deltaTime = 0;
         float boxSize = 0f;
+        int[,,] boxValues;
         Random random;
 
 	    public void Init(SimData simData)
@@ -55,7 +57,9 @@ namespace Template {
             coneAngle = simData.coneAngle;
             sprayTicks = simData.sprayTicks;
             deltaTime = simData.deltaTime;
+            boxes = simData.boxes;
             boxSize = simData.boxSize;
+            boxValues = new int[boxes,boxes,boxes];
             random = new Random(seed);
             oldPosBuffer = new OpenCLBuffer<float3>(ocl, particleCount);
             newPosBuffer = new OpenCLBuffer<float3>(ocl, particleCount);
@@ -90,80 +94,111 @@ namespace Template {
             boxPoints[7] = new float3(halfSize, -halfSize, boxSize);
         }
 
+        int pressureCount = 0;
 	    public void Tick()
 	    {
-            if(tickCount == 100)
-                MessageBox.Show("OK 100");
-            if(tickCount < sprayTicks)
+            while (true)
             {
-                int particlePerTick = particleCount / sprayTicks;
-                for(int i = 0; i < particlePerTick; i++)
+                if (tickCount == 100)
+                    MessageBox.Show("OK 100");
+                if (tickCount < sprayTicks)
                 {
-                    oldDirBuffer[particlePerTick * tickCount + i] = createRandomVector();
-                    newDirBuffer[particlePerTick * tickCount + i] = oldDirBuffer[particlePerTick * tickCount + i];
+                    int particlePerTick = particleCount / sprayTicks;
+                    for (int i = 0; i < particlePerTick; i++)
+                    {
+                        oldDirBuffer[particlePerTick * tickCount + i] = createRandomVector();
+                        newDirBuffer[particlePerTick * tickCount + i] = oldDirBuffer[particlePerTick * tickCount + i];
+                    }
                 }
-            }
-            tickCount++;
-		    GL.Finish();
-		    // clear the screen
-		    screen.Clear( 0 );
-		    // do opencl stuff
-		    
-            kernel.SetArgument(0, oldPosBuffer);
-            kernel.SetArgument(1, newPosBuffer);
-            kernel.SetArgument(2, oldDirBuffer);
-            kernel.SetArgument(3, newDirBuffer);
-            kernel.SetArgument(4, velBuffer);
-            kernel.SetArgument(5, particleCount);
-            kernel.SetArgument(6, deltaTime);
-            kernel.SetArgument(7, boxSize);
-            // execute kernel
-            int worksize = (int)Math.Sqrt(particleCount);
-            worksize = worksize + 32 - (worksize % 32);
-            kernel.SetArgument(8, worksize);
-            long [] workSize = { worksize, worksize };
-		    long [] localSize = { 32, 4 };
+                tickCount++;
+                GL.Finish();
+                // clear the screen
+                screen.Clear(0);
+                // do opencl stuff
 
-            // NO INTEROP PATH:
-            // Use OpenCL to fill a C# pixel array, encapsulated in an
-            // OpenCLBuffer<int> object (buffer). After filling the buffer, it
-            // is copied to the screen surface, so the template code can show
-            // it in the window.
-            // execute the kernel
-            oldDirBuffer.CopyToDevice();
-            oldPosBuffer.CopyToDevice();
+                kernel.SetArgument(0, oldPosBuffer);
+                kernel.SetArgument(1, newPosBuffer);
+                kernel.SetArgument(2, oldDirBuffer);
+                kernel.SetArgument(3, newDirBuffer);
+                kernel.SetArgument(4, velBuffer);
+                kernel.SetArgument(5, particleCount);
+                kernel.SetArgument(6, deltaTime);
+                kernel.SetArgument(7, boxSize);
+                // execute kernel
+                int worksize = (int)Math.Sqrt(particleCount);
+                worksize = worksize + 32 - (worksize % 32);
+                kernel.SetArgument(8, worksize);
+                long[] workSize = { worksize, worksize };
+                long[] localSize = { 32, 4 };
 
-			kernel.Execute( workSize, localSize );
-			// get the data from the device to the host
-			newPosBuffer.CopyFromDevice();
-            newDirBuffer.CopyFromDevice();
-            
+                // NO INTEROP PATH:
+                // Use OpenCL to fill a C# pixel array, encapsulated in an
+                // OpenCLBuffer<int> object (buffer). After filling the buffer, it
+                // is copied to the screen surface, so the template code can show
+                // it in the window.
+                // execute the kernel
+                oldDirBuffer.CopyToDevice();
+                oldPosBuffer.CopyToDevice();
+
+                kernel.Execute(workSize, localSize);
+                // get the data from the device to the host
+                newPosBuffer.CopyFromDevice();
+                newDirBuffer.CopyFromDevice();
 
 
-            // pressure calcs
 
-            if(calcPressure())
-            {
-                MessageBox.Show((tickCount * deltaTime).ToString());
-            }
+                // pressure calcs
 
-            var tempBuffer = oldDirBuffer;
-            oldDirBuffer = newDirBuffer;
-            newDirBuffer = tempBuffer;
-
-            tempBuffer = oldPosBuffer;
-            oldPosBuffer = newPosBuffer;
-            newPosBuffer = tempBuffer;		
-            
-            for(int i = 0; i < 100; i++)
-                for(int j = 0; j < 100; j++)
+                if (tickCount > sprayTicks && tickCount > 10000)
                 {
-                    screen.pixels[i + j * 512] = 255;// (int)(oldDirBuffer[i + j * 100].x * 256f) ;
+                    if (calcPressure())
+                    {
+                        pressureCount++;
+                        MessageBox.Show((tickCount * deltaTime).ToString());
+                    }
                 }
+                else
+                {
+                    pressureCount = 0;
+                }
+
+                var tempBuffer = oldDirBuffer;
+                oldDirBuffer = newDirBuffer;
+                newDirBuffer = tempBuffer;
+
+                tempBuffer = oldPosBuffer;
+                oldPosBuffer = newPosBuffer;
+                newPosBuffer = tempBuffer;
+
+                /*for(int i = 0; i < 100; i++)
+                    for(int j = 0; j < 100; j++)
+                    {
+                        screen.pixels[i * 512 + j] = (int)((float)oldPosBuffer[i + j * 100].x * 256f) ;
+                    }*/
+            }
 	    }
 
         private bool calcPressure()
         {
+            boxValues = new int[boxes, boxes, boxes];
+            for(int i = 0; i < particleCount; i++)
+            {
+                float3 particle = newPosBuffer[i];
+                float singleBoxSize = boxSize / (float)boxes;
+                int x = (int)((particle.x + boxSize/2) / singleBoxSize);
+                int y = (int)((particle.y + boxSize / 2) / singleBoxSize);
+                int z = (int)((particle.z) / singleBoxSize);
+                boxValues[x, y, z]++;
+            }
+            float popvar = 0f;
+            float mean = (float)particleCount / (float)(boxes * boxes * boxes);
+            for (int i = 0; i < boxes; i++)
+                for (int j = 0; j < boxes; j++)
+                    for (int k = 0; k < boxes; k++)
+                        popvar += (boxValues[i,j,k] - mean) * (boxValues[i, j, k] - mean);
+            popvar /= boxes * boxes * boxes;
+            double jemoeder = Math.Sqrt(popvar);
+            MessageBox.Show("sd = " + jemoeder);
             return false;
         }
 
@@ -203,6 +238,7 @@ namespace Template {
         public int sprayTicks;
         public float deltaTime;
         public float boxSize;
+        public int boxes;
     }
 
 } // namespace Template

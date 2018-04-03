@@ -17,34 +17,34 @@ __kernel void device_function( __global float3* oldPos, __global float3* newPos,
 	newDir[id] = oldDir[id];	
 	//newPos[id] = (float3)(id * 1.0f, id* 1.0f, id * 1.0f);
 
-	if(newPos[id].x < -(boxSize/2))
+	if(newPos[id].x < 0-(boxSize/2))
 	{
-		newPos[id] = oldPos[id];	
+		newPos[id] = (float3)( 0.0001f-(boxSize/2), newPos[id].y, newPos[id].z);	
 		newDir[id] = (float3) (newDir[id].x * (-1.0f), newDir[id].y, newDir[id].z);
 	}
 	if(newPos[id].x > (boxSize/2))
 	{
-		newPos[id] = oldPos[id];	
+		newPos[id] = (float3)( (boxSize/2)-0.0001f, newPos[id].y, newPos[id].z);	
 		newDir[id] = (float3) (newDir[id].x * (-1.0f), newDir[id].y, newDir[id].z);
 	}
-	if(newPos[id].y < -(boxSize/2))
+	if(newPos[id].y < 0-(boxSize/2))
 	{
-		newPos[id] = oldPos[id];	
+		newPos[id] = (float3)(newPos[id].x, 0.0001f-(boxSize/2), newPos[id].z);	
 		newDir[id] = (float3) (newDir[id].x, newDir[id].y * (-1.0f), newDir[id].z);
 	}
 	if(newPos[id].y > (boxSize/2))
 	{
-		newPos[id] = oldPos[id];	
+		newPos[id] = (float3)(newPos[id].x, (boxSize/2)-0.0001f, newPos[id].z);	
 		newDir[id] = (float3) (newDir[id].x, newDir[id].y * (-1.0f), newDir[id].z);
 	}
-	if(newPos[id].z < -0.001f)
+	if(newPos[id].z < 0.0f)
 	{
-		newPos[id] = oldPos[id];	
+		newPos[id] = (float3)(newPos[id].x, newPos[id].y, 0.0001f);	
 		newDir[id] = (float3) (newDir[id].x, newDir[id].y, newDir[id].z * (-1.0f));
 	}
 	if(newPos[id].z > boxSize)
 	{
-		newPos[id] = oldPos[id];	
+		newPos[id] = (float3)(newPos[id].x, newPos[id].y, boxSize - 0.0001f);	
 		newDir[id] = (float3) (newDir[id].x, newDir[id].y, newDir[id].z * (-1.0f));
 	}
 
