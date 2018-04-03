@@ -201,9 +201,9 @@ namespace Template {
                     for (int k = 0; k < boxes; k++)
                         popvar += (boxValues[i,j,k] - mean) * (boxValues[i, j, k] - mean);
             popvar /= boxes * boxes * boxes;
-            double jemoeder = Math.Sqrt(popvar);
+            double standarddeviation = Math.Sqrt(popvar);
             //MessageBox.Show("sd = " + jemoeder);
-            lastavgs[tickCount % 100] = (float)jemoeder;
+            lastavgs[tickCount % 100] = (float)standarddeviation;
 
             if (tickCount % 100 == 0 && tickCount > 0)
             {
@@ -213,7 +213,7 @@ namespace Template {
                 avg /= 100f;
                 MessageBox.Show(avg.ToString());
             }
-            if (jemoeder < 1000)
+            if (standarddeviation < 1000)
                 return true;
             return false;
         }
