@@ -47,7 +47,10 @@ namespace Template {
         int[,,] boxValues;
         Random random;
 
-	    public void Init(SimData simData)
+        // file output
+        List<string> lines = new List<string>();
+
+        public void Init(SimData simData)
 	    {
 
             
@@ -197,9 +200,17 @@ namespace Template {
                     for (int k = 0; k < boxes; k++)
                         popvar += (boxValues[i,j,k] - mean) * (boxValues[i, j, k] - mean);
             popvar /= boxes * boxes * boxes;
-            double jemoeder = Math.Sqrt(popvar);
-            MessageBox.Show("sd = " + jemoeder);
+            double StandardDeviation = Math.Sqrt(popvar);
+            MessageBox.Show("sd = " + StandardDeviation);
+            lines.Add(StandardDeviation.ToString() + ",");
             return false;
+        }
+
+        private void writeToFile()
+        {
+            string path = "~/output.txt";
+            
+            System.IO.File.WriteAllLines(path, lines);
         }
 
 
