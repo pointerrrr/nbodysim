@@ -45,11 +45,13 @@ namespace Template {
         float deltaTime = 0;
         float boxSize = 0f;
         int[,,] boxValues;
+        float[] lastavgs;
+        float avgcount = 100f;
         Random random;
 
 	    public void Init(SimData simData)
 	    {
-
+            lastavgs = new float[(int)avgcount];
             
             seed = simData.seed;
             particleCount = simData.particleCount;
@@ -154,6 +156,7 @@ namespace Template {
                     if (calcPressure())
                     {
                         pressureCount++;
+                        MessageBox.Show("100% dun in " +(tickCount * deltaTime));
                         //if(pressureCount > 5)
                            // MessageBox.Show((tickCount * deltaTime).ToString());
                     }
@@ -179,8 +182,8 @@ namespace Template {
                     }*/
             }
 	    }
-
-        float[] lastavgs = new float[100];
+        
+        
 
         private bool calcPressure()
         {
@@ -203,18 +206,18 @@ namespace Template {
             popvar /= boxes * boxes * boxes;
             double standarddeviation = Math.Sqrt(popvar);
             //MessageBox.Show("sd = " + jemoeder);
-            lastavgs[tickCount % 100] = (float)standarddeviation;
+            
+            lastavgs[(int)(tickCount % avgcount)] = (float)standarddeviation;
 
-            if (tickCount % 100 == 0 && tickCount > 0)
+            if (tickCount > avgcount)
             {
                 float avg = 0;
-                for (int i = 0; i < 100; i++)
+                for (int i = 0; i < avgcount; i++)
                     avg += lastavgs[i];
-                avg /= 100f;
-                MessageBox.Show(avg.ToString());
+                avg /= avgcount;
+                if (avg < mean * 0.05f)
+                    return true;
             }
-            if (standarddeviation < 1000)
-                return true;
             return false;
         }
 
