@@ -158,10 +158,11 @@ namespace Template {
                     if (calcPressure())
                     {
                         pressureCount++;
-                        if (pressureCount > 5)
+                        if (pressureCount > 10)
                         {
-
+                            writeToFile();
                             MessageBox.Show((tickCount * deltaTime).ToString());
+                            Application.Exit();
                         }
                            
                     }
