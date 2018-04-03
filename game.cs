@@ -113,6 +113,7 @@ namespace Template {
                         newDirBuffer[particlePerTick * tickCount + i] = oldDirBuffer[particlePerTick * tickCount + i];
                     }
                 }
+
                 tickCount++;
                 GL.Finish();
                 // clear the screen
@@ -157,8 +158,12 @@ namespace Template {
                     if (calcPressure())
                     {
                         pressureCount++;
-                        //if(pressureCount > 5)
-                           // MessageBox.Show((tickCount * deltaTime).ToString());
+                        if (pressureCount > 5)
+                        {
+
+                            MessageBox.Show((tickCount * deltaTime).ToString());
+                        }
+                           
                     }
 
                     else
@@ -205,9 +210,9 @@ namespace Template {
                         popvar += (boxValues[i,j,k] - mean) * (boxValues[i, j, k] - mean);
             popvar /= boxes * boxes * boxes;
 
-            double standarddeviation = Math.Sqrt(popvar);
+            double standardDeviation = Math.Sqrt(popvar);
             //MessageBox.Show("sd = " + jemoeder);
-            lastavgs[tickCount % 100] = (float)standarddeviation;
+            lastavgs[tickCount % 100] = (float)standardDeviation;
 
             if (tickCount % 100 == 0 && tickCount > 0)
             {
@@ -217,8 +222,10 @@ namespace Template {
                 avg /= 100f;
                 MessageBox.Show(avg.ToString());
             }
-            if (standarddeviation < 1000)
+            if (standardDeviation < 1000)
                 return true;
+
+            lines.Add(standardDeviation.ToString() + ",");
 
             return false;
         }
