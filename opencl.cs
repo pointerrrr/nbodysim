@@ -157,8 +157,9 @@ namespace Template
 			}
 			if (bestPlatform > -1)
 			{
-				var platform = ComputePlatform.Platforms[bestPlatform];
-				Console.Write( "initializing OpenCL... " + platform.Name + " (" + platform.Profile + ").\n" );
+                var platform = ComputePlatform.Platforms[bestPlatform];
+                platform = ComputePlatform.Platforms[0]; // delete if ur not a fag
+                Console.Write( "initializing OpenCL... " + platform.Name + " (" + platform.Profile + ").\n" );
 				// try to enable gl interop functionality
 				try
 				{

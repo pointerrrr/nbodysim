@@ -49,6 +49,9 @@ namespace Template {
         float avgcount = 100f;
         Random random;
 
+	// output
+	List<string> lines = new List<string>();
+	
 	    public void Init(SimData simData)
 	    {
             lastavgs = new float[(int)avgcount];
@@ -155,10 +158,7 @@ namespace Template {
                 {
                     if (calcPressure())
                     {
-                        pressureCount++;
-                        MessageBox.Show("100% dun in " +(tickCount * deltaTime));
-                        //if(pressureCount > 5)
-                           // MessageBox.Show((tickCount * deltaTime).ToString());
+			            
                     }
 
                     else
@@ -205,7 +205,6 @@ namespace Template {
                         popvar += (boxValues[i,j,k] - mean) * (boxValues[i, j, k] - mean);
             popvar /= boxes * boxes * boxes;
             double standarddeviation = Math.Sqrt(popvar);
-            //MessageBox.Show("sd = " + jemoeder);
             
             lastavgs[(int)(tickCount % avgcount)] = (float)standarddeviation;
 
@@ -216,12 +215,23 @@ namespace Template {
                     avg += lastavgs[i];
                 avg /= avgcount;
                 if (avg < mean * 0.05f)
+		{
+                    lines.Add(avg.ToString() + ",");
+                    writeAndExit();
                     return true;
+		}
             }
             return false;
         }
 
 
+	private void writeAndExit()
+	{
+        // todo: restart with other variables
+        MessageBox.Show("Test");
+        System.IO.File.WriteAllLines("output.csv", lines);
+
+    }
         private float2 randomPointOnCircle()
         {
             double randomfloat = (random.NextDouble() * 2f * Math.PI);
