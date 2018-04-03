@@ -76,7 +76,7 @@ namespace Template {
                 oldDirBuffer[i] = new float3(0,0,0f);
                 newPosBuffer[i] = new float3(0,0,0f);
                 newDirBuffer[i] = new float3(0,0,0f);
-                velBuffer[i] = particleSpeed;
+                velBuffer[i] = particleSpeed - 0.2f + (float)(random.NextDouble() * 0.4d);
             }
             velBuffer.CopyToDevice();
         }
@@ -99,8 +99,8 @@ namespace Template {
 	    {
             while (true)
             {
-                if (tickCount == 100)
-                    MessageBox.Show("OK 100");
+                /*if (tickCount == 100)
+                    MessageBox.Show("OK 100");*/
                 if (tickCount < sprayTicks)
                 {
                     int particlePerTick = particleCount / sprayTicks;
@@ -149,17 +149,19 @@ namespace Template {
 
                 // pressure calcs
 
-                if (tickCount > sprayTicks && tickCount > 10000)
+                if (tickCount > sprayTicks)
                 {
                     if (calcPressure())
                     {
                         pressureCount++;
-                        MessageBox.Show((tickCount * deltaTime).ToString());
+                        //if(pressureCount > 5)
+                           // MessageBox.Show((tickCount * deltaTime).ToString());
                     }
-                }
-                else
-                {
-                    pressureCount = 0;
+
+                    else
+                    {
+                        pressureCount = 0;
+                    }
                 }
 
                 var tempBuffer = oldDirBuffer;
@@ -177,6 +179,8 @@ namespace Template {
                     }*/
             }
 	    }
+
+        float[] lastavgs = new float[100];
 
         private bool calcPressure()
         {
@@ -198,7 +202,19 @@ namespace Template {
                         popvar += (boxValues[i,j,k] - mean) * (boxValues[i, j, k] - mean);
             popvar /= boxes * boxes * boxes;
             double jemoeder = Math.Sqrt(popvar);
-            MessageBox.Show("sd = " + jemoeder);
+            //MessageBox.Show("sd = " + jemoeder);
+            lastavgs[tickCount % 100] = (float)jemoeder;
+
+            if (tickCount % 100 == 0 && tickCount > 0)
+            {
+                float avg = 0;
+                for (int i = 0; i < 100; i++)
+                    avg += lastavgs[i];
+                avg /= 100f;
+                MessageBox.Show(avg.ToString());
+            }
+            if (jemoeder < 1000)
+                return true;
             return false;
         }
 
