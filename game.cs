@@ -45,8 +45,8 @@ namespace Template {
         float deltaTime = 0;
         float boxSize = 0f;
         int[,,] boxValues;
-        float[] lastavgs;
-        float avgcount = 100f;
+        float[] lastSDs;
+        float sdMinCount = 100f;
         Random random;
         SimData inSimData;
 
@@ -55,7 +55,7 @@ namespace Template {
     
         public void Init(SimData simData)
         {
-            lastavgs = new float[(int)avgcount];
+            lastSDs = new float[(int)sdMinCount];
             inSimData = simData;   
             seed = simData.seed;
             particleCount = simData.particleCount;
@@ -198,24 +198,20 @@ namespace Template {
             popvar /= boxes * boxes * boxes;
             double standarddeviation = Math.Sqrt(popvar);
             
-            lastavgs[(int)(tickCount % avgcount)] = (float)standarddeviation;
+            lastSDs[(int)(tickCount % sdMinCount)] = (float)standarddeviation;
 
-            if (tickCount > avgcount)
+            if (tickCount > sdMinCount)
             {
                 float avg = 0;
-                for (int i = 0; i < avgcount; i++)
-                    avg += lastavgs[i];
-                avg /= avgcount;
+                for (int i = 0; i < sdMinCount; i++)
+                    avg += lastSDs[i];
+                avg /= sdMinCount;
                 if (avg < mean * 0.25f)
-        {
+                {
                     lines.Add(avg.ToString() + ",");
                     writeOrReinitialize();
                     return true;
-        }
-            }
-            else
-            {
-                lastavgs = new float[lastavgs.Length];
+                }
             }
             return false;
         }
