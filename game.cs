@@ -29,7 +29,6 @@ namespace Template {
         OpenCLBuffer<float3> newDirBuffer;
         OpenCLBuffer<float3> oldDirBuffer;
         OpenCLBuffer<float> velBuffer;
-        OpenCLBuffer<float3> boxPoints;
         Random rng;
         // create an OpenGL texture to which OpenCL can send data
         OpenCLImage<int> image = new OpenCLImage<int>( ocl, 512, 512 );
@@ -47,6 +46,7 @@ namespace Template {
         int[,,] boxValues;
         float[] lastSDs;
         float sdMinCount = 100f;
+        int goodTicks = 0;
         Random random;
         SimData inSimData;
 
@@ -55,6 +55,8 @@ namespace Template {
     
         public void Init(SimData simData)
         {
+            tickCount = 0;
+            goodTicks = 0;
             lastSDs = new float[(int)sdMinCount];
             inSimData = simData;   
             seed = simData.seed;
@@ -72,8 +74,6 @@ namespace Template {
             oldDirBuffer = new OpenCLBuffer<float3>(ocl, particleCount);
             newDirBuffer = new OpenCLBuffer<float3>(ocl, particleCount);
             velBuffer = new OpenCLBuffer<float>(ocl, particleCount);
-            boxPoints = new OpenCLBuffer<float3>(ocl, 8);
-            setBoxPoints(boxSize);
 
             
             for (int i = 0; i < particleCount; i++)
@@ -86,19 +86,7 @@ namespace Template {
             }
             velBuffer.CopyToDevice();
         }
-
-        private void setBoxPoints(float boxSize)
-        {
-            float halfSize = boxSize / 2f;
-            boxPoints[0] = new float3( -halfSize, halfSize , 0);
-            boxPoints[1] = new float3( halfSize, halfSize , 0);
-            boxPoints[2] = new float3( -halfSize, -halfSize , 0);
-            boxPoints[3] = new float3( halfSize, - halfSize , 0);
-            boxPoints[4] = new float3(-halfSize, halfSize, boxSize);
-            boxPoints[5] = new float3(halfSize, halfSize, boxSize);
-            boxPoints[6] = new float3(-halfSize, -halfSize, boxSize);
-            boxPoints[7] = new float3(halfSize, -halfSize, boxSize);
-        }
+        
 
         public void Tick()
         {
@@ -208,14 +196,21 @@ namespace Template {
                 avg /= sdMinCount;
                 if (avg < mean * 0.25f)
                 {
-                    lines.Add(avg.ToString() + ",");
-                    writeOrReinitialize();
-                    return true;
+                    
+                    goodTicks++;
+                    if(goodTicks > 100)
+                    {
+                        lines.Add((tickCount * deltaTime).ToString());
+                        writeOrReinitialize();
+                        return true;
+                    }
+                    
                 }
             }
             return false;
         }
 
+        
 
     private void writeOrReinitialize()
     {
