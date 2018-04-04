@@ -5,7 +5,11 @@ using OpenTK;
 using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Input;
- 
+using System.Threading;
+using System.Collections;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+
 namespace Template
 {
 	// OpenTKApp
@@ -32,9 +36,73 @@ namespace Template
 			game.screen = new Surface( Width, Height );
 			Sprite.target = game.screen;
 			screenID = game.screen.GenTexture();
-			game.Init(new SimData { seed=15657, coneAngle = 45f, particleCount= 1000, particleSpeed = 1f, sprayTicks = 10, deltaTime = 0.01f, boxSize = 1f, boxes = 3});
+            SimData defaultData = new SimData { seed = 15657, coneAngle = 45f, particleCount = 1000000, particleSpeed = 1f, sprayTicks = 10, deltaTime = 0.01f, boxSize = 1f, boxes = 3, pvalue = 0.05f };
+            int totalSims = 40;
+            Thread[] threads = new Thread[totalSims];
+            float[][] results = new float[totalSims][];
+            Game[] games = new Game[totalSims];
+            
+            float[] coneAngles = new float[20];
+            for (int i = 1; i <= 20; i++)
+            {
+                coneAngles[i-1] = i * 5f;
+            }
+            float pvalue = 0.05f;
+            int[] sprayTicks = new int[20];
+            for(int i = 1; i <= 20; i++)
+            {
+                sprayTicks[i-1] = i;
+            }
+;
+            
+            for (int i = 0; i < 20; i++)
+            {
+                int used = i;
+                games[i] = new Game();
+                SimData newData = new SimData(defaultData);
+                newData.pvalue = pvalue;
+                newData.coneAngle = coneAngles[used];
+                threads[i] = new Thread(() => { games[used].Init(newData); results[used] =  games[used].runSim(); });
+                threads[i].Start();
+            }
+            for (int i = 20; i < 40; i++)
+            {
+                int used = i;
+                games[i] = new Game();
+                SimData newData = new SimData(defaultData);
+                newData.pvalue = pvalue;
+                newData.sprayTicks = sprayTicks[used - 20];
+                threads[i] = new Thread(() => { games[used].Init(newData); results[used] = games[used].runSim(); });
+                threads[i].Start();
+
+            }
+            
+            for (int i = 0; i < 40; i++)
+                threads[i].Join();
+            WriteData(results);
 		}
-		protected override void OnUnload( EventArgs e )
+
+        
+
+        public void WriteData(float[][] results)
+        {
+            List<string> lines = new List<string>();
+            for (int i = 0; i < results.Length; i++)
+            {
+                string line = "";
+                for (int j = 0; j < results[i].Length; j++)
+                {
+                    line = line + results[i][j] + ",";
+                }
+                lines.Add(line);
+            }
+
+            System.IO.File.WriteAllLines("output.csv", lines);
+            System.Diagnostics.Process.Start("output.csv");
+            Environment.Exit(1);
+        }
+
+        protected override void OnUnload( EventArgs e )
 		{
 			// called upon app close
 			GL.DeleteTextures( 1, ref screenID );

@@ -42,6 +42,7 @@ namespace Template {
         float particleSpeed = 0;
         float coneAngle = 0;
         float deltaTime = 0;
+        float pvalue = 0f;
         float boxSize = 0f;
         int[,,] boxValues;
         float[] lastSDs;
@@ -49,14 +50,22 @@ namespace Template {
         int goodTicks = 0;
         Random random;
         SimData inSimData;
+        
+        int simCount = 0;
+        static int totalSims = 1;
+        float[] results = new float[totalSims];
+        bool notDone = true;
 
-    // output
-    List<string> lines = new List<string>();
+
+
+        // output
+        List<string> lines = new List<string>();
     
         public void Init(SimData simData)
         {
             tickCount = 0;
             goodTicks = 0;
+            
             lastSDs = new float[(int)sdMinCount];
             inSimData = simData;   
             seed = simData.seed;
@@ -65,6 +74,7 @@ namespace Template {
             coneAngle = simData.coneAngle;
             sprayTicks = simData.sprayTicks;
             deltaTime = simData.deltaTime;
+            pvalue = simData.pvalue;
             boxes = simData.boxes;
             boxSize = simData.boxSize;
             boxValues = new int[boxes,boxes,boxes];
@@ -74,7 +84,7 @@ namespace Template {
             oldDirBuffer = new OpenCLBuffer<float3>(ocl, particleCount);
             newDirBuffer = new OpenCLBuffer<float3>(ocl, particleCount);
             velBuffer = new OpenCLBuffer<float>(ocl, particleCount);
-
+            
             
             for (int i = 0; i < particleCount; i++)
             {
@@ -86,11 +96,10 @@ namespace Template {
             }
             velBuffer.CopyToDevice();
         }
-        
 
-        public void Tick()
+        public float[] runSim()
         {
-            while (true)
+            while (notDone)
             {
                 /*if (tickCount == 100)
                     MessageBox.Show("OK 100");*/
@@ -106,7 +115,7 @@ namespace Template {
                 tickCount++;
                 GL.Finish();
                 // clear the screen
-                screen.Clear(0);
+                //screen.Clear(0);
                 // do opencl stuff
 
                 kernel.SetArgument(0, oldPosBuffer);
@@ -144,7 +153,10 @@ namespace Template {
 
                 if (tickCount > sprayTicks)
                 {
-                    calcPressure();
+                    if (calcPressure())
+                    {
+                        //return tickCount * deltaTime;
+                    }
                 }
 
                 var tempBuffer = oldDirBuffer;
@@ -161,6 +173,13 @@ namespace Template {
                         screen.pixels[i * 512 + j] = (int)((float)oldPosBuffer[i + j * 100].x * 256f) ;
                     }*/
             }
+            return results;
+        }
+        
+
+        public void Tick()
+        {
+            
         }
         
         
@@ -194,14 +213,16 @@ namespace Template {
                 for (int i = 0; i < sdMinCount; i++)
                     avg += lastSDs[i];
                 avg /= sdMinCount;
-                if (avg < mean * 0.25f)
+                if (avg < mean * pvalue)
                 {
                     
                     goodTicks++;
                     if(goodTicks > 100)
                     {
-                        lines.Add((tickCount * deltaTime).ToString());
-                        writeOrReinitialize();
+                        results[simCount] = tickCount * deltaTime;
+                        simCount++;
+                        //lines.Add((tickCount * deltaTime).ToString());
+                        //writeOrReinitialize();
                         return true;
                     }
                     
@@ -212,21 +233,23 @@ namespace Template {
 
         
 
-    private void writeOrReinitialize()
-    {
-        // todo: restart with other variables
-        if (lines.Count >= 50)
+        private void writeOrReinitialize()
         {
-            System.IO.File.WriteAllLines("output.csv", lines);
-            System.Diagnostics.Process.Start("output.csv");
-            Environment.Exit(1);
+            // todo: restart with other variables
+            if (lines.Count >= totalSims)
+            {
+                //System.IO.File.WriteAllLines("output.csv", lines);
+                //System.Diagnostics.Process.Start("output.csv");
+                //Environment.Exit(1);
+                notDone = false;
+                    //System.Threading.Tasks.
+            }
+            else
+            {
+                SimData newSimData = new SimData { seed = inSimData.seed + 12345, coneAngle = inSimData.coneAngle, particleCount = inSimData.particleCount, particleSpeed = inSimData.particleSpeed, sprayTicks = inSimData.sprayTicks, deltaTime = inSimData.deltaTime, boxSize = inSimData.boxSize, boxes = inSimData.boxes };
+                Init(newSimData);
+            }
         }
-        else
-        {
-            SimData newSimData = new SimData { seed = inSimData.seed + 12345, coneAngle = inSimData.coneAngle, particleCount = inSimData.particleCount, particleSpeed = inSimData.particleSpeed, sprayTicks = inSimData.sprayTicks, deltaTime = inSimData.deltaTime, boxSize = inSimData.boxSize, boxes = inSimData.boxes };
-            Init(newSimData);
-        }
-    }
         private float2 randomPointOnCircle()
         {
             double randomfloat = (random.NextDouble() * 2f * Math.PI);
@@ -263,6 +286,25 @@ namespace Template {
         public float deltaTime;
         public float boxSize;
         public int boxes;
+        public float pvalue;
+
+        public SimData()
+        {
+
+        }
+
+        public SimData(SimData defaultData)
+        {
+            seed = defaultData.seed;
+            particleCount = defaultData.particleCount;
+            particleSpeed = defaultData.particleSpeed;
+            coneAngle = defaultData.coneAngle;
+            sprayTicks = defaultData.sprayTicks;
+            deltaTime = defaultData.deltaTime;
+            boxSize = defaultData.boxSize;
+            boxes = defaultData.boxes;
+            pvalue = defaultData.pvalue;
+        }
     }
 
 } // namespace Template
