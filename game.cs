@@ -222,7 +222,7 @@ namespace Template {
                         results[simCount] = tickCount * deltaTime;
                         simCount++;
                         //lines.Add((tickCount * deltaTime).ToString());
-                        //writeOrReinitialize();
+                        writeOrReinitialize();
                         return true;
                     }
                     
@@ -236,7 +236,7 @@ namespace Template {
         private void writeOrReinitialize()
         {
             // todo: restart with other variables
-            if (lines.Count >= totalSims)
+            if (simCount >= totalSims)
             {
                 //System.IO.File.WriteAllLines("output.csv", lines);
                 //System.Diagnostics.Process.Start("output.csv");
@@ -261,7 +261,8 @@ namespace Template {
         private float3 createRandomVector()
         {
             float2 point = randomPointOnCircle();
-            float adjacent = 1f/(float)Math.Tan(coneAngle);
+            float radians = (coneAngle / 2f) * (float)(Math.PI / 180f);
+            float adjacent = 1f/(float)Math.Tan(radians);
             Vector3 final = new Vector3(point.x, point.y, adjacent);
             final.Normalize();
 

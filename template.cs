@@ -36,26 +36,26 @@ namespace Template
 			game.screen = new Surface( Width, Height );
 			Sprite.target = game.screen;
 			screenID = game.screen.GenTexture();
-            SimData defaultData = new SimData { seed = 15657, coneAngle = 45f, particleCount = 1000000, particleSpeed = 1f, sprayTicks = 10, deltaTime = 0.01f, boxSize = 1f, boxes = 3, pvalue = 0.05f };
-            int totalSims = 40;
+            SimData defaultData = new SimData { seed = 15657, coneAngle = 45f, particleCount = 1000000, particleSpeed = 1f, sprayTicks = 10, deltaTime = 0.01f, boxSize = 1f, boxes = 5, pvalue = 0.05f };
+            int totalSims = 20;
             Thread[] threads = new Thread[totalSims];
             float[][] results = new float[totalSims][];
             Game[] games = new Game[totalSims];
             
-            float[] coneAngles = new float[20];
-            for (int i = 1; i <= 20; i++)
+            float[] coneAngles = new float[totalSims/2];
+            for (int i = 1; i <= totalSims/2; i++)
             {
-                coneAngles[i-1] = i * 5f;
+                coneAngles[i-1] = (i+3) * 5f;
             }
-            float pvalue = 0.05f;
-            int[] sprayTicks = new int[20];
-            for(int i = 1; i <= 20; i++)
+            float pvalue = 0.1f;
+            int[] sprayTicks = new int[totalSims/2];
+            for(int i = 1; i <= totalSims/2; i++)
             {
-                sprayTicks[i-1] = i;
+                sprayTicks[i-1] = i*2;
             }
 ;
             
-            for (int i = 0; i < 20; i++)
+            for (int i = 0; i < totalSims/2; i++)
             {
                 int used = i;
                 games[i] = new Game();
@@ -65,19 +65,19 @@ namespace Template
                 threads[i] = new Thread(() => { games[used].Init(newData); results[used] =  games[used].runSim(); });
                 threads[i].Start();
             }
-            for (int i = 20; i < 40; i++)
+            for (int i = totalSims/2; i < totalSims; i++)
             {
                 int used = i;
                 games[i] = new Game();
                 SimData newData = new SimData(defaultData);
                 newData.pvalue = pvalue;
-                newData.sprayTicks = sprayTicks[used - 20];
+                newData.sprayTicks = sprayTicks[used - totalSims/2];
                 threads[i] = new Thread(() => { games[used].Init(newData); results[used] = games[used].runSim(); });
                 threads[i].Start();
 
             }
             
-            for (int i = 0; i < 40; i++)
+            for (int i = 0; i < totalSims; i++)
                 threads[i].Join();
             WriteData(results);
 		}
