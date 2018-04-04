@@ -52,7 +52,7 @@ namespace Template {
         SimData inSimData;
         
         int simCount = 0;
-        static int totalSims = 1;
+        static int totalSims = 30;
         float[] results = new float[totalSims];
         bool notDone = true;
 
@@ -60,6 +60,7 @@ namespace Template {
 
         // output
         List<string> lines = new List<string>();
+        bool started = false;
     
         public void Init(SimData simData)
         {
@@ -79,12 +80,15 @@ namespace Template {
             boxSize = simData.boxSize;
             boxValues = new int[boxes,boxes,boxes];
             random = new Random(seed);
-            oldPosBuffer = new OpenCLBuffer<float3>(ocl, particleCount);
-            newPosBuffer = new OpenCLBuffer<float3>(ocl, particleCount);
-            oldDirBuffer = new OpenCLBuffer<float3>(ocl, particleCount);
-            newDirBuffer = new OpenCLBuffer<float3>(ocl, particleCount);
-            velBuffer = new OpenCLBuffer<float>(ocl, particleCount);
-            
+            if (!started)
+            {
+                oldPosBuffer = new OpenCLBuffer<float3>(ocl, particleCount);
+                newPosBuffer = new OpenCLBuffer<float3>(ocl, particleCount);
+                oldDirBuffer = new OpenCLBuffer<float3>(ocl, particleCount);
+                newDirBuffer = new OpenCLBuffer<float3>(ocl, particleCount);
+                velBuffer = new OpenCLBuffer<float>(ocl, particleCount);
+                started = true;
+            }
             
             for (int i = 0; i < particleCount; i++)
             {
@@ -92,7 +96,7 @@ namespace Template {
                 oldDirBuffer[i] = new float3(0,0,0f);
                 newPosBuffer[i] = new float3(0,0,0f);
                 newDirBuffer[i] = new float3(0,0,0f);
-                velBuffer[i] = particleSpeed - 0.2f + (float)(random.NextDouble() * 0.4d);
+                velBuffer[i] = particleSpeed - 0.2f + (float)(gaussianDist() * 0.4d);
             }
             velBuffer.CopyToDevice();
         }
@@ -181,8 +185,15 @@ namespace Template {
         {
             
         }
-        
-        
+
+        // source https://stackoverflow.com/questions/218060/random-gaussian-variables
+        private float gaussianDist()
+        {
+            
+            double u1 = 1.0 - random.NextDouble(); //uniform(0,1] random doubles
+            double u2 = 1.0 - random.NextDouble();
+            return (float)(Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2));
+        }
 
         private bool calcPressure()
         {
@@ -246,7 +257,7 @@ namespace Template {
             }
             else
             {
-                SimData newSimData = new SimData { seed = inSimData.seed + 12345, coneAngle = inSimData.coneAngle, particleCount = inSimData.particleCount, particleSpeed = inSimData.particleSpeed, sprayTicks = inSimData.sprayTicks, deltaTime = inSimData.deltaTime, boxSize = inSimData.boxSize, boxes = inSimData.boxes };
+                SimData newSimData = new SimData { seed = inSimData.seed + 12345, coneAngle = inSimData.coneAngle, particleCount = inSimData.particleCount, particleSpeed = inSimData.particleSpeed, sprayTicks = inSimData.sprayTicks, deltaTime = inSimData.deltaTime, boxSize = inSimData.boxSize, boxes = inSimData.boxes, pvalue = inSimData.pvalue };
                 Init(newSimData);
             }
         }

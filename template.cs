@@ -9,6 +9,7 @@ using System.Threading;
 using System.Collections;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Windows.Forms;
 
 namespace Template
 {
@@ -36,7 +37,7 @@ namespace Template
 			game.screen = new Surface( Width, Height );
 			Sprite.target = game.screen;
 			screenID = game.screen.GenTexture();
-            SimData defaultData = new SimData { seed = 15657, coneAngle = 45f, particleCount = 1000000, particleSpeed = 1f, sprayTicks = 10, deltaTime = 0.01f, boxSize = 1f, boxes = 5, pvalue = 0.05f };
+            SimData defaultData = new SimData { seed = 15657, coneAngle = 90f, particleCount = 1000000, particleSpeed = 1f, sprayTicks = 10, deltaTime = 0.01f, boxSize = 1f, boxes = 5, pvalue = 0.05f };
             int totalSims = 20;
             Thread[] threads = new Thread[totalSims];
             float[][] results = new float[totalSims][];
@@ -45,7 +46,7 @@ namespace Template
             float[] coneAngles = new float[totalSims/2];
             for (int i = 1; i <= totalSims/2; i++)
             {
-                coneAngles[i-1] = (i+3) * 5f;
+                coneAngles[i-1] = (i+3) * 10f;
             }
             float pvalue = 0.1f;
             int[] sprayTicks = new int[totalSims/2];
@@ -97,9 +98,20 @@ namespace Template
                 lines.Add(line);
             }
 
-            System.IO.File.WriteAllLines("output.csv", lines);
-            System.Diagnostics.Process.Start("output.csv");
-            Environment.Exit(1);
+            try
+            {
+                System.IO.File.WriteAllLines("output.csv", lines);
+                System.Diagnostics.Process.Start("output.csv");
+                Environment.Exit(1);
+            }
+            catch(Exception)
+            {
+                MessageBox.Show("Close the current output file!");
+                System.IO.File.WriteAllLines("output01.csv", lines);
+                System.Diagnostics.Process.Start("output01.csv");
+                Environment.Exit(1);
+            }
+            
         }
 
         protected override void OnUnload( EventArgs e )
