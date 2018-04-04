@@ -48,6 +48,7 @@ namespace Template {
         float[] lastavgs;
         float avgcount = 100f;
         Random random;
+        SimData inSimData;
 
 	// output
 	List<string> lines = new List<string>();
@@ -55,7 +56,7 @@ namespace Template {
 	    public void Init(SimData simData)
 	    {
             lastavgs = new float[(int)avgcount];
-            
+            inSimData = simData;   
             seed = simData.seed;
             particleCount = simData.particleCount;
             particleSpeed = simData.particleSpeed;
@@ -156,15 +157,7 @@ namespace Template {
 
                 if (tickCount > sprayTicks)
                 {
-                    if (calcPressure())
-                    {
-			            
-                    }
-
-                    else
-                    {
-                        pressureCount = 0;
-                    }
+                    calcPressure();
                 }
 
                 var tempBuffer = oldDirBuffer;
@@ -217,7 +210,7 @@ namespace Template {
                 if (avg < mean * 0.05f)
 		{
                     lines.Add(avg.ToString() + ",");
-                    writeAndExit();
+                    writeOrReinitialize();
                     return true;
 		}
             }
@@ -225,12 +218,19 @@ namespace Template {
         }
 
 
-	private void writeAndExit()
+	private void writeOrReinitialize()
 	{
         // todo: restart with other variables
-        MessageBox.Show("Test");
-        System.IO.File.WriteAllLines("output.csv", lines);
-
+        if (lines.Count >= 50)
+        {
+            System.IO.File.WriteAllLines("output.csv", lines);
+            Environment.Exit(1);
+        }
+        else
+        {
+            SimData newSimData = new SimData { seed = inSimData.seed + 1, coneAngle = inSimData.coneAngle, particleCount = inSimData.particleCount, particleSpeed = inSimData.particleSpeed, sprayTicks = inSimData.sprayTicks, deltaTime = inSimData.deltaTime, boxSize = inSimData.boxSize, boxes = inSimData.boxes };
+            Init(newSimData);
+        }
     }
         private float2 randomPointOnCircle()
         {
