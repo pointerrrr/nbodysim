@@ -17,12 +17,12 @@ namespace Template {
     class Game
     {
 
-	    // when GLInterop is set to true, the fractal is rendered directly to an OpenGL texture
-	    bool GLInterop = false;
-	    // load the OpenCL program; this creates the OpenCL context
-	    static OpenCLProgram ocl = new OpenCLProgram( "../../program.cl" );
-	    // find the kernel named 'device_function' in the program
-	    OpenCLKernel kernel = new OpenCLKernel( ocl, "device_function" );
+        // when GLInterop is set to true, the fractal is rendered directly to an OpenGL texture
+        bool GLInterop = false;
+        // load the OpenCL program; this creates the OpenCL context
+        static OpenCLProgram ocl = new OpenCLProgram( "../../program.cl" );
+        // find the kernel named 'device_function' in the program
+        OpenCLKernel kernel = new OpenCLKernel( ocl, "device_function" );
         // create a regular buffer; by default this resides on both the host and the device
         OpenCLBuffer<float3> newPosBuffer;// = new OpenCLBuffer<int>( ocl, 512 * 512 );
         OpenCLBuffer<float3> oldPosBuffer;
@@ -31,10 +31,10 @@ namespace Template {
         OpenCLBuffer<float> velBuffer;
         OpenCLBuffer<float3> boxPoints;
         Random rng;
-	    // create an OpenGL texture to which OpenCL can send data
-	    OpenCLImage<int> image = new OpenCLImage<int>( ocl, 512, 512 );
-	    public Surface screen;
-	    Stopwatch timer = new Stopwatch();
+        // create an OpenGL texture to which OpenCL can send data
+        OpenCLImage<int> image = new OpenCLImage<int>( ocl, 512, 512 );
+        public Surface screen;
+        Stopwatch timer = new Stopwatch();
         int seed = 0;
         int tickCount = 0;
         int particleCount = 0;
@@ -50,11 +50,11 @@ namespace Template {
         Random random;
         SimData inSimData;
 
-	// output
-	List<string> lines = new List<string>();
-	
-	    public void Init(SimData simData)
-	    {
+    // output
+    List<string> lines = new List<string>();
+    
+        public void Init(SimData simData)
+        {
             lastavgs = new float[(int)avgcount];
             inSimData = simData;   
             seed = simData.seed;
@@ -100,9 +100,8 @@ namespace Template {
             boxPoints[7] = new float3(halfSize, -halfSize, boxSize);
         }
 
-        int pressureCount = 0;
-	    public void Tick()
-	    {
+        public void Tick()
+        {
             while (true)
             {
                 /*if (tickCount == 100)
@@ -174,7 +173,7 @@ namespace Template {
                         screen.pixels[i * 512 + j] = (int)((float)oldPosBuffer[i + j * 100].x * 256f) ;
                     }*/
             }
-	    }
+        }
         
         
 
@@ -207,28 +206,33 @@ namespace Template {
                 for (int i = 0; i < avgcount; i++)
                     avg += lastavgs[i];
                 avg /= avgcount;
-                if (avg < mean * 0.05f)
-		{
+                if (avg < mean * 0.25f)
+        {
                     lines.Add(avg.ToString() + ",");
                     writeOrReinitialize();
                     return true;
-		}
+        }
+            }
+            else
+            {
+                lastavgs = new float[lastavgs.Length];
             }
             return false;
         }
 
 
-	private void writeOrReinitialize()
-	{
+    private void writeOrReinitialize()
+    {
         // todo: restart with other variables
         if (lines.Count >= 50)
         {
             System.IO.File.WriteAllLines("output.csv", lines);
+            System.Diagnostics.Process.Start("output.csv");
             Environment.Exit(1);
         }
         else
         {
-            SimData newSimData = new SimData { seed = inSimData.seed + 1, coneAngle = inSimData.coneAngle, particleCount = inSimData.particleCount, particleSpeed = inSimData.particleSpeed, sprayTicks = inSimData.sprayTicks, deltaTime = inSimData.deltaTime, boxSize = inSimData.boxSize, boxes = inSimData.boxes };
+            SimData newSimData = new SimData { seed = inSimData.seed + 12345, coneAngle = inSimData.coneAngle, particleCount = inSimData.particleCount, particleSpeed = inSimData.particleSpeed, sprayTicks = inSimData.sprayTicks, deltaTime = inSimData.deltaTime, boxSize = inSimData.boxSize, boxes = inSimData.boxes };
             Init(newSimData);
         }
     }
